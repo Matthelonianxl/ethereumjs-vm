@@ -1,64 +1,13 @@
-# 
-# This whole file is a workaround, as Codecov does not fully support GitHub Actions for pull requests from external repositories. Codecov + CircleCI does.
-# As soon as a release is made, we can migrate to GitHub Actions, taking advantage of their job filtering. 
-# 
-
+# Use the latest 2.1 version of CircleCI pipeline process engine. See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
-
-aliases:
-  - &steps
-    docker:
-      - image: circleci/node:10
-    steps:
-      - checkout
-      - run: 
-          name: Installing dependencies
-          command: npx lerna bootstrap --scope ethereumjs-${CIRCLE_JOB} --ignore-scripts --include-dependencies --no-ci
-      - run: 
-          name: Building target package and dependencies
-          command: npx lerna run --scope ethereumjs-${CIRCLE_JOB} --include-dependencies build
-      - run: 
-          name: Running coverage tests
-          command: cd ~/project/packages/${CIRCLE_JOB} && npm run coverage
-      - run: 
-          name: Codecov upload
-          command: curl -s https://codecov.io/bash | bash -s -- -f ~/project/packages/${CIRCLE_JOB}/coverage/lcov.info -F "${CIRCLE_JOB}" -t "${CODECOV_TOKEN}" -n "${CIRCLE_BUILD_NUM}" -y ".codecov.yml" -Z || echo 'Codecov upload failed'
-
-jobs:
-  account:
-    <<: *steps
-  block:
-    docker:
-      - image: circleci/node:10
-    steps:
-      - checkout
-      - run: 
-          name: Installing dependencies
-          command: cd ~/project/packages/${CIRCLE_JOB} && npm install
-      - run: 
-          name: Running coverage tests
-          command: cd ~/project/packages/${CIRCLE_JOB} && npm run coverage
-      - run: 
-          name: Codecov upload
-          command: curl -s https://codecov.io/bash | bash -s -- -f ~/project/packages/${CIRCLE_JOB}/coverage/lcov.info -F "${CIRCLE_JOB}" -t "${CODECOV_TOKEN}" -n "${CIRCLE_BUILD_NUM}" -y ".codecov.yml" -Z || echo 'Codecov upload failed'
-  blockchain:
-    <<: *steps
-  common:
-    <<: *steps
-  tx:
-    <<: *steps
-  vm:
-    <<: *steps
-
-
-
+# Use a package of configuration called an orb.
+orbs:
+  # Declare a dependency on the welcome-orb
+  welcome: circleci/welcome-orb@0.4.1
+# Orchestrate or schedule a set of jobs
 workflows:
-  version: 2
-  coverage:
+  # Name the workflow "welcome"
+  welcome:
+    # Run the welcome/run job in its own container
     jobs:
-      - account
-      - block
-      - blockchain
-      - common
-      - tx
-      - vm
+      - welcome/run
